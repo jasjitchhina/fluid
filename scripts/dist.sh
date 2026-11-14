@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 #
 # Assemble the release layout: bin/neru, share/man/man1 and, on macOS, an
-# ad-hoc signed Neru.app. It is the exact tree a release zip unpacks to, so
-# scripts/install.sh --from and CI's publish jobs both consume it.
+# ad-hoc signed Neru.app.
 #
 #   scripts/dist.sh [BIN] [OUT] [BUNDLE_VERSION] [SHORT_VERSION] [BUILD_ID]
 #

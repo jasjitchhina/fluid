@@ -139,50 +139,9 @@ build-version VERSION_OVERRIDE:
     CGO_ENABLED=1 go build -ldflags="-s -w -X github.com/y3owk1n/neru/internal/buildinfo.Version={{ VERSION_OVERRIDE }} -X github.com/y3owk1n/neru/internal/buildinfo.GitCommit={{ GIT_COMMIT }} -X github.com/y3owk1n/neru/internal/buildinfo.BuildDate={{ BUILD_DATE }}" -trimpath -o bin/neru ./cmd/neru
     @echo "✓ Build complete: bin/neru (version: {{ VERSION_OVERRIDE }})"
 
-# Build a macOS release artifact for CI on a native macOS host.
-
-# Usage: just release-ci-darwin arm64 v1.2.3
-[doc('Build the macOS release artifact, on a native macOS host.')]
-release-ci-darwin ARCH VERSION_OVERRIDE:
-    @echo "Building release artifact (darwin/{{ ARCH }}) for CI..."
-    @echo "Version: {{ VERSION_OVERRIDE }}"
-    @echo "Commit: {{ GIT_COMMIT }}"
-    @echo "Date: {{ BUILD_DATE }}"
-    mkdir -p bin
-    CGO_ENABLED=1 GOOS=darwin GOARCH={{ ARCH }} MACOSX_DEPLOYMENT_TARGET={{ MACOSX_DEPLOYMENT_TARGET }} CGO_LDFLAGS_ALLOW='-Wl,.*' CGO_LDFLAGS='-Wl,-macosx_version_min,{{ MACOSX_DEPLOYMENT_TARGET }}' go build -ldflags="-s -w -X github.com/y3owk1n/neru/internal/buildinfo.Version={{ VERSION_OVERRIDE }} -X github.com/y3owk1n/neru/internal/buildinfo.GitCommit={{ GIT_COMMIT }} -X github.com/y3owk1n/neru/internal/buildinfo.BuildDate={{ BUILD_DATE }}" -trimpath -o bin/neru-darwin-{{ ARCH }} ./cmd/neru
-    @echo "✓ Release artifact for darwin/{{ ARCH }} built successfully"
-
-# Build a Linux release artifact for CI on a native Linux host.
-
-# Usage: just release-ci-linux amd64 v1.2.3
-[doc('Build the Linux release artifact, on a native Linux host.')]
-release-ci-linux ARCH VERSION_OVERRIDE:
-    @echo "Building release artifact (linux/{{ ARCH }}) for CI..."
-    @echo "Version: {{ VERSION_OVERRIDE }}"
-    @echo "Commit: {{ GIT_COMMIT }}"
-    @echo "Date: {{ BUILD_DATE }}"
-    mkdir -p bin
-    CGO_ENABLED=1 GOOS=linux GOARCH={{ ARCH }} go build -ldflags="-s -w -X github.com/y3owk1n/neru/internal/buildinfo.Version={{ VERSION_OVERRIDE }} -X github.com/y3owk1n/neru/internal/buildinfo.GitCommit={{ GIT_COMMIT }} -X github.com/y3owk1n/neru/internal/buildinfo.BuildDate={{ BUILD_DATE }}" -trimpath -o bin/neru-linux-{{ ARCH }} ./cmd/neru
-    @echo "✓ Release artifact for linux/{{ ARCH }} built successfully"
-
-# Build a Windows release artifact for CI.
-
-# Usage: just release-ci-windows amd64 v1.2.3
-[doc('Build the Windows release artifact, from any host.')]
-release-ci-windows ARCH VERSION_OVERRIDE:
-    @echo "Building release artifact (windows/{{ ARCH }}) for CI..."
-    @echo "Version: {{ VERSION_OVERRIDE }}"
-    @echo "Commit: {{ GIT_COMMIT }}"
-    @echo "Date: {{ BUILD_DATE }}"
-    mkdir -p bin
-    just generate-winres {{ ARCH }}
-    CGO_ENABLED=0 GOOS=windows GOARCH={{ ARCH }} go build -ldflags="-s -w -X github.com/y3owk1n/neru/internal/buildinfo.Version={{ VERSION_OVERRIDE }} -X github.com/y3owk1n/neru/internal/buildinfo.GitCommit={{ GIT_COMMIT }} -X github.com/y3owk1n/neru/internal/buildinfo.BuildDate={{ BUILD_DATE }}" -trimpath -o bin/neru-windows-{{ ARCH }}.exe ./cmd/neru
-    @echo "✓ Release artifact for windows/{{ ARCH }} built successfully"
-
 # Assemble the release layout: bin/neru, share/man/man1 and, on macOS, an
-# ad-hoc signed Neru.app. It is the exact tree a release zip unpacks to, so the
-# installer and CI's publish jobs both consume it. BIN defaults to `just build`
-# output. CI passes its cross-built binary plus the Info.plist versions. The
+# ad-hoc signed Neru.app. BIN defaults to `just build` output; pass a
+# cross-built binary and the Info.plist versions to override. The
 # bodies live in scripts/dist.sh and scripts/dist.ps1 rather than a shebang
 # recipe, which needs cygpath on Windows. The Windows variant needs no Bash.
 # Usage: just dist [BIN] [OUT] [BUNDLE_VERSION] [SHORT_VERSION] [BUILD_ID]
@@ -195,33 +154,6 @@ dist BIN="" OUT="build/dist" BUNDLE_VERSION="" SHORT_VERSION="" BUILD_ID="":
 [doc('Assemble the release layout (bin, man) under build/dist.')]
 dist BIN="" OUT="build/dist" BUNDLE_VERSION="" SHORT_VERSION="" BUILD_ID="":
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dist.ps1 -Bin "{{ BIN }}" -Out "{{ OUT }}" -Version "{{ VERSION }}"
-
-# Build, assemble the release layout, and install it with the same script a
-# `curl | bash` user runs (scripts/install.sh, or install.ps1 on Windows), so
-# a source install lands in the same places as a release. Pass -y to accept
-# every prompt (`just install -y`). Other flags are the installer's own.
-[unix]
-[doc('Build and install from source via the release installer; -y auto-accepts.')]
-install *ARGS: build dist
-    bash scripts/install.sh --from build/dist {{ ARGS }}
-
-[windows]
-[doc('Build and install from source via the release installer; -y auto-accepts.')]
-install *ARGS: build dist
-    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1 -From build/dist {{ ARGS }}
-
-# Remove whatever `just install` or the curl installer put in place. Pass -y to
-# accept every prompt, and --purge to also remove your config and logs (they
-# are kept otherwise, so -y alone can never delete your config.toml).
-[unix]
-[doc('Undo `just install`. Your config survives unless you pass --purge.')]
-uninstall *ARGS:
-    bash scripts/install.sh --uninstall {{ ARGS }}
-
-[windows]
-[doc('Undo `just install`. Your config survives unless you pass -Purge.')]
-uninstall *ARGS:
-    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1 -Uninstall {{ ARGS }}
 
 # Run tests
 
@@ -541,7 +473,7 @@ lint-go:
     @echo "✓ Go lint complete"
 
 # Lint Objective-C with the clang static analyzer (via clang-tidy, which
-# oku.toml provides). macOS only, since the .m files need the macOS SDK.
+# Homebrew's llvm provides). macOS only, since the .m files need the macOS SDK.
 #
 # Excluded checks, each for a reason:
 #  - optin.osx.cocoa.localizability: Neru is not localized, so user-facing
@@ -560,7 +492,7 @@ lint-objc:
         exit 0
     fi
     if ! command -v clang-tidy >/dev/null 2>&1; then
-        echo "clang-tidy not found — run 'oku sync' (oku.toml provides it)" >&2
+        echo "clang-tidy not found — install it (brew install llvm)" >&2
         exit 1
     fi
     echo "Linting Objective-C files (clang-tidy)..."
@@ -601,8 +533,8 @@ vet-cross:
     GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go vet ./...
     @echo "✓ Cross-platform vet complete"
 
-# The libraries a CGO build links against come from the distro, not from oku.
-# oku.toml provides the toolchain only. The package lists are the ones in
+# The libraries a CGO build links against come from the distro.
+# The package lists are the ones in
 # docs/contributing/development.md#build-dependencies, which says what each is for.
 [linux]
 [doc('Install the system libraries a Linux build links against, with sudo.')]
@@ -705,7 +637,7 @@ test-windows-compile:
 # linux- or windows-tagged source is invisible locally and first appears as a
 # red CI job. Reproducing it needs the Linux toolchain (CGO on, native dev
 # headers), so this runs in the same container image the Linux CI job uses, with
-# the golangci-lint version that oku.lock pins.
+# a pinned golangci-lint version.
 #
 # Requires a running Docker daemon.
 [doc('Lint the Linux and Windows builds in a Docker container.')]
@@ -876,11 +808,10 @@ loc:
     lines() { git ls-files "$@" | xargs cat | grep -cv '^[[:space:]]*$'; }
     echo
     printf '%-26s %7d\n' "user docs" "$(lines README.md 'docs/guide/*.md' 'docs/concepts/*.md' 'docs/reference/*.md')"
-    printf '%-26s %7d\n' "contributor docs" "$(lines CONTRIBUTING.md CONTEXT.md 'docs/contributing/*.md' 'docs/project/*.md')"
+    printf '%-26s %7d\n' "contributor docs" "$(lines CONTEXT.md 'docs/contributing/*.md' 'docs/project/*.md')"
     printf '%-26s %7d\n' "decision records" "$(lines 'docs/adr/*.md')"
     printf '%-26s %7d\n' "agent guides and skills" "$(lines '*AGENTS.md' '.agents/*.md' '.claude/agents/*.md')"
     printf '%-26s %7d\n' "shipped configs" "$(lines 'configs/*.toml')"
-    printf '%-26s %7d\n' "website" "$(lines 'website/src/*.astro' 'website/src/*.ts' 'website/src/*.mjs' 'website/src/*.css')"
 
 # Download dependencies
 [doc('Download the module dependencies and tidy go.mod.')]
@@ -1049,26 +980,3 @@ generate-protocols:
 [doc('Download the Wayland protocol XMLs and generate their code.')]
 generate-all-protocols: fetch-protocols generate-protocols
     @echo "✓ All Wayland protocols downloaded and generated"
-
-# The docs site in website/ renders docs/ and never copies it. Nightly is the
-# checkout's docs/, latest is the newest v* tag's (website/scripts/build.sh).
-# Node comes from website/oku.toml, so the Go toolchain stays without it.
-[doc('Install the docs site dependencies from website/package-lock.json.')]
-website-install:
-    website/scripts/with-node.sh npm ci
-
-[doc('Serve the docs site with live reload, rendering this checkout as nightly.')]
-website-dev:
-    ASTRO_TELEMETRY_DISABLED=1 website/scripts/with-node.sh npx astro dev
-
-[doc('Build the docs site, latest tag at the root and this checkout under nightly/.')]
-website-build:
-    website/scripts/with-node.sh ./scripts/build.sh
-
-[doc('Serve the built docs site the way GitHub Pages does, 404 page included.')]
-website-preview:
-    website/scripts/with-node.sh node scripts/serve.mjs
-
-[doc('Type-check the docs site.')]
-website-check:
-    ASTRO_TELEMETRY_DISABLED=1 website/scripts/with-node.sh npx astro check

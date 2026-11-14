@@ -26,9 +26,7 @@ so the roadmap has no platform feature list.
 
 ## Open direction
 
-Ideas with maintainer interest and no schedule. Each is an issue rather than a
-promise, and a Discussion is where a new one starts
-([Contributing](../../CONTRIBUTING.md#feature-requests)).
+Ideas with no schedule.
 
 - **React to a real mouse click inside a mode**
   ([#1417](https://github.com/y3owk1n/neru/issues/1417)).
@@ -36,8 +34,3 @@ promise, and a Discussion is where a new one starts
   `sub_key_preview` ([#1116](https://github.com/y3owk1n/neru/issues/1116)).
 - **Auto-refresh hints when the accessibility tree changes**
   ([#1002](https://github.com/y3owk1n/neru/issues/1002)).
-
-## Helping out
-
-Where contributions help most is in
-[CONTRIBUTING.md](../../CONTRIBUTING.md#where-help-is-most-useful).

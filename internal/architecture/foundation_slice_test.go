@@ -29,18 +29,8 @@ import (
 // the only recipe name this file needs.
 const foundationRecipe = "test-foundation"
 
-// ciWorkflow is what CI actually runs. It invokes the individual just recipes
-// rather than the justfile's own `ci` recipe, so a recipe reachable only from
-// `ci` is still ungated, which is why this file checks both.
-const ciWorkflow = ".github/workflows/ci.yml"
-
-// localCIRecipe is the recipe CONTRIBUTING.md and AGENTS.md name as the
-// pre-push gate: the recipes CI gates on, run on one host. That description
-// is only true while it reaches everything ciWorkflow reaches.
-//
-// Described rather than quoted, on purpose, because the two documents word it
-// differently, and a comment quoting either goes stale the next time it is
-// edited, silently.
+// localCIRecipe is the pre-push gate AGENTS.md names, and it must reach the
+// foundation slice for that description to stay true.
 const localCIRecipe = "ci"
 
 // listFoundationEnv makes the test print the slice it computes, one package per
@@ -136,46 +126,18 @@ func TestFoundationSliceMatchesTheRecipe(t *testing.T) {
 	}
 }
 
-// TestFoundationSliceRunsInCI fails when nothing CI runs reaches the
-// test-foundation recipe.
-//
-// TestFoundationSliceMatchesTheRecipe above pins the package *list*. This pins
-// that the recipe is executed. Both are needed. The list check would not have
-// caught a mistyped flag, a `go test` that stopped being reached at all, or a
-// package whose tests only fail in the slice's own invocation. And for weeks
-// nothing caught anything, because CI ran every recipe except this one while
-// AGENTS.md told agents to trust it.
-func TestFoundationSliceRunsInCI(t *testing.T) {
+// TestCIRecipeRunsTheFoundationSlice fails when the local ci recipe stops
+// reaching test-foundation. TestFoundationSliceMatchesTheRecipe pins the
+// package list; this pins that the recipe is actually executed.
+func TestCIRecipeRunsTheFoundationSlice(t *testing.T) {
 	recipes := parseJustfile(t)
 
-	// Establish the recipe exists before asking what reaches it. "Nothing runs
-	// test-foundation" is a true but useless thing to say about a recipe that
-	// has been renamed or deleted.
+	// A renamed or deleted recipe would make "nothing reaches it" vacuous.
 	recipes.mustFind(t, foundationRecipe)
-
-	roots := workflowRecipes(t, recipes)
-	if len(roots) == 0 {
-		t.Fatalf(
-			"%s runs no recipe %s defines; the invocation match is broken, not CI",
-			ciWorkflow,
-			justfileName,
-		)
-	}
-
-	if !recipes.reaches(roots, foundationRecipe) {
-		t.Errorf(
-			"%s runs %s, and none of them reaches %s; CI does not gate on the "+
-				"recipe contributors are told to trust",
-			ciWorkflow,
-			strings.Join(roots, ", "),
-			foundationRecipe,
-		)
-	}
 
 	if !recipes.reaches([]string{localCIRecipe}, foundationRecipe) {
 		t.Errorf(
-			"the %s recipe in %s does not reach %s, so it is no longer the "+
-				"host-local run of the same recipes that CONTRIBUTING.md says it is",
+			"the %s recipe in %s does not reach %s",
 			localCIRecipe,
 			justfileName,
 			foundationRecipe,
@@ -393,79 +355,8 @@ func recipePackages(t *testing.T, recipes justRecipes) []string {
 	return deduped
 }
 
-// workflowRecipes returns the recipes the CI workflow executes, sorted.
-func workflowRecipes(t *testing.T, recipes justRecipes) []string {
-	t.Helper()
-
-	invoked := recipes.invokedIn(withoutComments(workflowRunCommands(t)))
-	slices.Sort(invoked)
-
-	return slices.Compact(invoked)
-}
-
-// runKeyPattern matches a step's `run:` key and captures both its indentation
-// and whatever follows on the same line, which is empty for a block scalar and
-// the whole command for an inline one.
-var runKeyPattern = regexp.MustCompile(`^(\s*)(?:-\s+)?run:\s*(.*)$`)
-
-// workflowRunCommands returns only the shell the CI workflow's steps run: every
-// `run:` value, inline or block scalar, and nothing else in the file.
-//
-// Reading the whole file instead would blur the difference between "CI runs
-// this recipe" and "the recipe's name appears somewhere". Every step here is
-// named for what it runs, as in `- name: Run just test-ci`, so a match on the file
-// reports each recipe CI merely claims to run, and would go on reporting it
-// after the run: line underneath was deleted.
-func workflowRunCommands(t *testing.T) string {
-	t.Helper()
-
-	var (
-		commands       []string
-		blockKeyIndent int
-		inBlock        bool
-	)
-
-	for line := range strings.Lines(readRepoFile(t, ciWorkflow)) {
-		line = strings.TrimRight(line, "\n")
-
-		if inBlock {
-			indent := len(line) - len(strings.TrimLeft(line, " "))
-			if strings.TrimSpace(line) == "" || indent > blockKeyIndent {
-				commands = append(commands, line)
-
-				continue
-			}
-
-			inBlock = false
-		}
-
-		match := runKeyPattern.FindStringSubmatch(line)
-		if match == nil {
-			continue
-		}
-
-		// `run: |` and `run: >` carry the command on the lines below, indented
-		// past the key. Anything else is the command itself.
-		if strings.HasPrefix(match[2], "|") || strings.HasPrefix(match[2], ">") {
-			blockKeyIndent = len(match[1])
-			inBlock = true
-
-			continue
-		}
-
-		commands = append(commands, match[2])
-	}
-
-	if len(commands) == 0 {
-		t.Fatalf("%s runs no steps; the run: match is broken, not CI", ciWorkflow)
-	}
-
-	return strings.Join(commands, "\n")
-}
-
-// withoutComments drops whole-line # comments, shared by the justfile and the
-// workflow's shell because both use them. A comment naming a recipe would
-// otherwise be read as running it, and the false edge points the wrong way.
+// withoutComments drops whole-line # comments from justfile bodies. A comment
+// naming a recipe would otherwise be read as running it, and the false edge points the wrong way.
 // "# `just ci` covers this locally" would satisfy the very assertion it was
 // written to excuse.
 func withoutComments(text string) string {

@@ -1,15 +1,12 @@
 # Development guide
 
-Set up, build, test and debug Neru, and decide where new code goes. The
-contribution process is in [CONTRIBUTING.md](../../CONTRIBUTING.md) and code
+Set up, build, test and debug Neru, and decide where new code goes. Code
 conventions are in the root [AGENTS.md](../../AGENTS.md).
 
 ## Quick start
 
 ```bash
-git clone https://github.com/y3owk1n/neru.git
-cd neru
-oku sync && oku allow   # or: brew install go just golangci-lint llvm
+brew install go just golangci-lint llvm
 just build
 ./bin/neru launch       # runs in the foreground
 ./bin/neru hints        # from a second terminal, should show hint overlays
@@ -29,7 +26,7 @@ Neru rather than develop it, see [installation](../guide/installation.md).
 
 ### Prerequisites
 
-- **Go 1.27+**, **Just** and **golangci-lint**, from oku or by hand (below)
+- **Go 1.27+**, **Just** and **golangci-lint** (below)
 - **Xcode Command Line Tools** (macOS): `xcode-select --install`
 - **Build dependencies** (Linux): see [Build dependencies](#build-dependencies)
 - **A POSIX shell and Bash** (Windows): `just` runs recipes with `sh` by
@@ -38,30 +35,13 @@ Neru rather than develop it, see [installation](../guide/installation.md).
   `PATH`. CI runs them under bash.
 - An EditorConfig plugin, for the `.editorconfig` rules CI enforces
 
-### Option A: oku (recommended)
-
-[oku](https://github.com/y3owk1n/oku) installs the tools `oku.toml` lists, at
-the versions `oku.lock` pins, into a profile for this repo:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/y3owk1n/oku/main/install.sh | sh
-oku sync               # install the toolchain
-oku allow              # let the shell hook put it on PATH inside this repo
-```
-
-The installer's shell hook activates the profile when you `cd` in, or put
-`eval "$(oku env --shell bash)"` in a [direnv](https://direnv.net/) `.envrc`.
-CI installs the same versions from `oku.lock`. `oku update` moves each tool to
-the newest version `oku.toml` allows, and `oku outdated` shows what is behind.
-
-### Option B: manual installation
+### Installing the tools
 
 ```bash
 brew install go just golangci-lint llvm   # llvm supplies clang-format
 ```
 
-Match the golangci-lint version that `oku.lock` pins, which CI uses. gopls,
-gofumpt and golines are optional, through `go install`.
+gopls, gofumpt and golines are optional, through `go install`.
 
 ## Common tasks
 
@@ -185,8 +165,7 @@ CGO and modifier expectations are per backend, not per OS. Start from
 
 ### Build dependencies
 
-A Linux build uses CGO and links against distribution libraries that oku does
-not provide. `just linux-deps` installs them, with a C compiler and pkg-config,
+A Linux build uses CGO and links against distribution libraries. `just linux-deps` installs them, with a C compiler and pkg-config,
 through apt, dnf or pacman.
 
 - On Fedora 42 and later, also install `liboeffis-devel`, which ships
@@ -343,35 +322,3 @@ Every navigation mode implements `Mode` (`Activate(modecmd.Activation)`,
 activation is a [modecmd](../../internal/domain/modecmd) descriptor plus an
 `Activation` field, not a new method. The shape of a new mode and its locking
 contract are in [modes/AGENTS.md](../../internal/app/modes/AGENTS.md).
-
-## Docs site
-
-The site in [website/](../../website/) renders the user docs in `docs/guide/`,
-`docs/concepts/`, `docs/reference/` and `docs/project/` with Astro Starlight and copies nothing.
-Contributor docs stay on GitHub, and site links to them go there. Each page's
-first heading is its title, and the sidebar follows
-the sections and links in [docs/README.md](../README.md), so a new page needs a
-link there. It publishes two channels: the newest release tag's docs at the
-root, and `main` under `nightly/`.
-
-Node comes from [website/oku.toml](../../website/oku.toml). Run
-`oku sync && oku allow` in `website/` once, then:
-
-| Recipe                 | What it does                                          |
-| ---------------------- | ----------------------------------------------------- |
-| `just website-install` | Install the site's npm dependencies                   |
-| `just website-dev`     | Serve this checkout's docs as nightly, with reloading. The latest channel is not built, so the version switcher is disabled |
-| `just website-check`   | Type-check the site                                   |
-| `just website-build`   | Build both channels into `website/dist/site`, then check every internal link |
-| `just website-preview` | Serve the build as GitHub Pages does, 404 page included. Use this to try the version switcher and 404 redirects |
-
-The website workflow builds the site on pull requests that touch `docs/`,
-`website/` or the workflow file. It deploys to GitHub Pages on pushes to
-`main` that touch the same paths, and on releases.
-
-## Release process
-
-Merging the [Release Please](https://github.com/googleapis/release-please) PR
-publishes a semantic version and its binaries on GitHub, with a changelog built
-from the [PR titles](../../CONTRIBUTING.md#commit-messages) on `main`. The
-Homebrew bump happens in its own repo.

@@ -117,9 +117,8 @@ var sharedTempPaths = []string{"/tmp/", "/var/tmp/"}
 // TestNoServiceDefinitionWritesDaemonOutputToASharedPath keeps the daemon's
 // output in the user's own log directory.
 //
-// The service definitions are written four times over: the plist the CLI
-// generates, the plist template shipped for a hand install, the installer
-// script's detached launch, and the Nix modules. So the answer to where a log
+// The service definitions are written twice: the plist the CLI generates and
+// the plist template shipped for a hand install. So the answer to where a log
 // goes is only as good as the copy nobody remembered to change. This judges
 // every file that decides it, whatever language it is written in.
 //
@@ -185,11 +184,9 @@ func TestNoServiceDefinitionWritesDaemonOutputToASharedPath(t *testing.T) {
 }
 
 // serviceDefinitionFloor is the fewest files expected to redirect the daemon's
-// output. Four do today: the generated plist, the shipped template, the
-// installer script and the home-manager module. Three catches a check that
-// has stopped recognizing them without firing when one legitimately stops
-// redirecting.
-const serviceDefinitionFloor = 3
+// output. Two do today: the generated plist and the shipped template. Below
+// that, the check has stopped recognizing them.
+const serviceDefinitionFloor = 2
 
 // containsAny reports whether text contains any of the needles.
 func containsAny(text string, needles []string) bool {

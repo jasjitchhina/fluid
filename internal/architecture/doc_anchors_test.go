@@ -10,18 +10,10 @@ import (
 	"unicode"
 )
 
-// docURLSources are files outside the docs that link to a doc by URL. The
-// install scripts print their links in the user's terminal.
-var docURLSources = []string{
-	"scripts/install.sh",
-	"scripts/install.ps1",
-}
-
 // docURLSourceDirs are checked file by file too. They hold the example
 // configs, which `neru config init` copies into users' config files, the
-// published schemas, whose descriptions editors show, the issue forms and the
-// agent skills.
-var docURLSourceDirs = []string{"configs/", "schemas/", ".github/", ".agents/skills/"}
+// published schemas, whose descriptions editors show, and the agent skills.
+var docURLSourceDirs = []string{"configs/", "schemas/", ".agents/skills/"}
 
 // mainDocURLPattern matches a URL to a file on main. A URL pinned to a tag
 // points at a tree other than this checkout, and is not judged here.
@@ -91,7 +83,6 @@ func TestDocURLs_ShippedOutsideTheDocsResolve(t *testing.T) {
 		}
 	})
 
-	sources = append(sources, docURLSources...)
 	assertWalkedAtLeast(t, "files carrying doc URLs", len(sources), bulkWalkFloor)
 
 	for _, source := range sources {

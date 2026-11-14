@@ -332,14 +332,11 @@ landing page. The homes:
 | A symptom and its fix, log locations | [troubleshooting](../guide/troubleshooting.md) |
 | Layer boundaries, port contracts, data flow, `CodeNotSupported` policy, overlay split, coordinates | [architecture](architecture.md), shape only, never status |
 | File layout, tiers, backend packages, porting checklists | this guide |
-| Build recipes, Linux build dependencies, test tiers, `just ci` contents, docs site, release | [development guide](development.md) |
-| Contribution process, commits, PRs, starter tasks | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
+| Build recipes, Linux build dependencies, test tiers, `just ci` contents | [development guide](development.md) |
 | Go style, logging, naming | [AGENTS.md](../../AGENTS.md) (Conventions) |
 | What comes next | [roadmap](../project/roadmap.md), intent and priority only |
 
 ## Contributing safely
-
-Starter tasks are in [Good first contributions](../../CONTRIBUTING.md#good-first-contributions).
 
 **Open or link an issue first** before changing shared input semantics,
 introducing CGO to a pure-Go backend, moving shared logic into platform

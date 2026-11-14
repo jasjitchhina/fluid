@@ -49,12 +49,8 @@ command for lookup.
 ## Project
 
 - [Roadmap](project/roadmap.md): what comes next.
-- [Community configurations](project/showcases.md): setups shared by users.
-- [Changelog](../CHANGELOG.md): what changed in each release.
 
 ## Contributing
-
-These stay on GitHub. Start with [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 - [Development](contributing/development.md): set up, build, test and debug.
 - [Architecture](contributing/architecture.md): how Neru is put together.

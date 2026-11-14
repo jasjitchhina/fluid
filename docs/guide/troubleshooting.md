@@ -32,25 +32,9 @@ open -a Neru
 
 ### "command not found: neru"
 
-The install directory is not on your `PATH`. The install script prints which
-directory it used. Add it in your shell's rc file, for example
-`export PATH="$HOME/.local/bin:$PATH"`.
-
-### Homebrew install or upgrade fails
-
-Run `brew update && brew reinstall --cask neru`.
-
-### "profile.ps1 cannot be loaded because running scripts is disabled"
-
-Windows blocks the tab completion the installer added to your PowerShell
-profile. Allow signed scripts for your user, then open a new window:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-```
-
-To drop the completion instead, delete the two lines under
-`# neru shell completion (managed by install.ps1)` in the profile.
+The `neru` link is not on your `PATH`. Link it as
+[From source](installation.md#from-source) shows, or add its directory in your
+shell's rc file.
 
 ### "error while loading shared libraries"
 

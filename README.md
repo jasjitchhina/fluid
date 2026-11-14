@@ -6,11 +6,6 @@
 
 Hints, grids and vim keys for your whole desktop. Free, open source, one binary, one TOML file.
 
-[![Latest Release](https://img.shields.io/github/v/release/y3owk1n/neru?style=flat-square)](https://github.com/y3owk1n/neru/releases)
-[![License](https://img.shields.io/github/license/y3owk1n/neru?style=flat-square)](LICENSE)
-[![Discord](https://img.shields.io/discord/1502261043701874698?style=flat-square&label=discord)](https://discord.gg/KZwnwr9dz6)
-[![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-30363D?style=flat-square)](https://github.com/sponsors/y3owk1n)
-
 |     macOS 14+     |   Linux (X11, Wayland)   |     Windows 10+     |
 | :---------------: | :----------------------: | :-----------------: |
 |     Stable ✅     |      Beta, daily 🔵      |    Beta, daily 🔵   |
@@ -36,17 +31,9 @@ Neru does what Vimium does in the browser, for every app, window, menu bar and d
 
 ## Install
 
-```bash
-# macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.sh | bash
-```
-
-```powershell
-# Windows
-irm https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.ps1 | iex
-```
-
-Run it again to update. Homebrew, oku, Nix, prebuilt binaries, building from source, [agent skills](docs/guide/installation.md#set-up-with-an-agent) and uninstalling are in [Installation](docs/guide/installation.md).
+Build from source with `just build` (macOS needs the Xcode Command Line Tools).
+Installing the app bundle, completions and uninstalling are in
+[Installation](docs/guide/installation.md).
 
 ## Quick start
 
@@ -150,38 +137,12 @@ status, err := neru.Status(ctx)
 _, err = neru.Send(ctx, "hints", "--action", "left_click")
 ```
 
-Which interface fits which tool is in [Build on Neru](docs/guide/integrations.md). With a coding agent, the `neru-build-integration` [skill](docs/guide/installation.md#set-up-with-an-agent) writes and tests one against your installed version.
+Which interface fits which tool is in [Build on Neru](docs/guide/integrations.md).
 
 ## Documentation
 
-Read the docs at **[neru.kylewong.my](https://neru.kylewong.my/)**,
-or browse [docs/](docs/README.md) here on GitHub.
-
-## Community
-
-> _"neru: the ACTUAL BEST app for ditching mouse"_
-
-[![Community YouTube Review](https://img.youtube.com/vi/OFnpYTDA2gY/maxresdefault.jpg)](https://www.youtube.com/watch?v=OFnpYTDA2gY)
-
-- [Neru Dojo](https://bernatgene.github.io/neru-dojo/): a browser game to train recursive grid and hints.
-- [Community configs](docs/project/showcases.md): setups shared by users.
-- [Discord](https://discord.gg/KZwnwr9dz6): questions and setups.
-
-## Contributing
-
-Bug reports, especially on Linux and Windows, and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Support the project
-
-If Neru has earned a place in your workflow, [sponsor it](https://github.com/sponsors/y3owk1n). Need only window management? [mimi](https://github.com/y3owk1n/mimi) is Neru's window and space features as a standalone tool.
+Browse [docs/](docs/README.md).
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-<div align="center">
-<br/>
-
-Made with ❤️ by <a href="https://github.com/y3owk1n">y3owk1n</a>
-
-</div>

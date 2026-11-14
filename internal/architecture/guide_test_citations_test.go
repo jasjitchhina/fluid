@@ -36,11 +36,6 @@ const (
 	guideCitedTestFileFloor = 28
 )
 
-// generatedGuideDoc is the one markdown file in the checkout nobody writes,
-// since release-please regenerates it from commit subjects. A citation inside
-// it cannot be corrected in place, and a failure naming it would have no fix.
-const generatedGuideDoc = "CHANGELOG.md"
-
 // symlinkedGuideDoc is the sibling every AGENTS.md keeps
 // (agent_contract_test.go pins it). Reading it would report every AGENTS.md
 // citation twice, under a path the author never edits.
@@ -241,7 +236,7 @@ func guideDocuments(t *testing.T) []guideDocument {
 			return
 		}
 
-		if file.name == symlinkedGuideDoc || file.rel == generatedGuideDoc {
+		if file.name == symlinkedGuideDoc {
 			return
 		}
 

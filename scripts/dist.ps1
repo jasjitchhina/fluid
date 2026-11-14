@@ -1,8 +1,7 @@
 <#
 .SYNOPSIS
-Assemble the Windows release layout: bin\neru.exe and share\man\man1. It is
-the exact tree a release zip unpacks to, so scripts\install.ps1 -From and
-CI's publish jobs both consume it. `just dist` invokes it on Windows. The
+Assemble the Windows release layout: bin\neru.exe and share\man\man1.
+`just dist` invokes it on Windows. The
 macOS and Linux counterpart is scripts/dist.sh.
 
     scripts\dist.ps1 [-Bin bin\neru.exe] [-Out build\dist] [-Version v1.2.3]

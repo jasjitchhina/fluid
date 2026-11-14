@@ -1,224 +1,8 @@
 # Installation
 
-Every way to install, update and remove Neru. Supported systems are in
+How to build, install and remove Neru from source. Supported systems are in
 [Platform support](../reference/platform-support.md#platform-status). After
 installing, continue with [Getting started](getting-started.md).
-
-## Install script
-
-The recommended method on every platform. Run it again to update.
-
-```bash
-# macOS and Linux
-curl -fsSL https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.sh | bash
-```
-
-```powershell
-# Windows
-irm https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.ps1 | iex
-```
-
-It installs the binary, `Neru.app` on macOS, man pages, shell completions and,
-if you accept, the login service. It checks every download against its
-published `.sha256` file.
-
-> [!NOTE]
-> On Linux, install the [runtime libraries](linux.md#runtime-libraries)
-> first. The script checks for them and stops with a list if any are missing.
-
-Every flag, and where each file goes, is in
-[Install script reference](#install-script-reference).
-
-### Channels and versions
-
-The default is the latest **stable** release. **Nightly** is rebuilt from
-every push to `main`. A rerun stays on the installed channel, and the script
-asks before it switches channels.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.sh | bash -s -- --version v1.52.0
-curl -fsSL https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.sh | bash -s -- --channel nightly
-```
-
-```powershell
-# flags need a script block. NERU_CHANNEL, NERU_VERSION and NERU_YES work with plain `irm | iex`
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.ps1))) -Channel nightly
-```
-
-## Homebrew
-
-macOS only. Report tap problems at
-[y3owk1n/homebrew-tap](https://github.com/y3owk1n/homebrew-tap). Stable and
-nightly cannot be installed side by side, so uninstall one first.
-
-```bash
-brew install --cask y3owk1n/tap/neru            # stable, upgrade with brew upgrade --cask
-brew install --cask y3owk1n/tap/neru-nightly    # nightly, upgrade with brew upgrade --cask --greedy
-```
-
-Nightly upgrades need `--greedy`, or brew skips rolling releases.
-
-## oku
-
-[oku](https://github.com/y3owk1n/oku) installs Neru from the repo's
-`oku.pkg.toml` on macOS, Linux and Windows. It takes the release zip for your
-machine, checks it against the release's build attestation and `.sha256`
-file, and adds man pages and shell completions. It installs stable releases
-only.
-
-> [!NOTE]
-> On Linux, install the [runtime libraries](linux.md#runtime-libraries)
-> first. oku runs `neru` once to write the completions, and the install fails
-> if a library is missing.
-
-```bash
-oku add -g github:y3owk1n/neru --service   # with the login service
-```
-
-`-g` adds it to your global list. Inside a project directory oku installs
-only the program and skips `Neru.app` and the service. To keep it in your
-`oku.toml` instead:
-
-```toml
-[packages]
-neru = { ref = "github:y3owk1n/neru", service = true }
-```
-
-- **macOS:** oku copies `Neru.app` to `~/Applications`, and `neru` on your
-  `PATH` runs that copy, so the CLI and the daemon share its Accessibility and
-  Screen Recording permissions. macOS may ask for them again after an update.
-- **Login service:** `--service` registers the daemon with launchd on macOS,
-  Task Scheduler on Windows and a systemd user unit on Linux. `oku service`
-  controls it.
-- **Login service on Linux:** needs oku 0.18.0 or later. oku's unit starts
-  and stops with your graphical session, like the one `neru services install`
-  writes, so the same [session setup](linux.md#systemd-user-service) applies.
-  With an older oku, leave out `--service` and use
-  [`neru services install`](#login-service).
-- **With `neru services install` on Linux:** its unit points at the build in
-  oku's store, so after `oku update neru` run `neru services uninstall` and
-  `neru services install` again.
-- **One service only:** use oku's service or `neru services install`, not
-  both. `neru services install` does not see oku's service.
-- **From source:** `oku add -g github:y3owk1n/neru --from-source` builds the
-  release tag with Go, which oku installs, and writes `from_source = true` to
-  your list so every update builds too. A Linux machine with musl libc has no
-  release zip and always builds. The build needs what
-  [From source](#from-source) lists, and oku names any missing part.
-- **Latest main:** `oku add -g github:y3owk1n/neru#neru-main` builds the
-  newest commit of `main` instead of a release, and needs the same tools. Its
-  version is the date and commit, such as `2026.10.09-a73243f`, and
-  `oku update neru` takes the newest commit. It installs the same `neru`, so
-  remove the release package first. Add `--service` to keep Neru starting at
-  login.
-- **Updating:** `oku update neru`.
-
-## Prebuilt binaries
-
-Download `neru-<os>-<arch>.zip` from
-[GitHub Releases](https://github.com/y3owk1n/neru/releases/latest). `<os>` is
-`darwin`, `linux` or `windows`, and `<arch>` is `arm64` (Apple Silicon, ARM64)
-or `amd64` (Intel, x86_64). Every archive has a `.sha256` file, and releases
-from v1.51.0 on carry a build provenance attestation:
-
-```bash
-gh attestation verify neru-darwin-arm64.zip --repo y3owk1n/neru
-```
-
-Unpack `neru`, or `Neru.app` on macOS, anywhere you like. A manual install has
-no completions or login service. Add them with
-[Shell completions](#shell-completions) and [Login service](#login-service),
-or run the install script with `--from DIR` on the unpacked tree.
-
-## Nix
-
-The flake provides modules for nix-darwin, NixOS and home-manager, and an
-overlay with two packages:
-
-- `pkgs.neru`: the release zip for your system (default).
-- `pkgs.neru-source`: built from the flake's source.
-
-Add the input `inputs.neru.url = "github:y3owk1n/neru";` to `flake.nix`,
-then the overlay and one module:
-
-```nix
-modules = [
-  { nixpkgs.overlays = [ neru.overlays.default ]; }
-  neru.darwinModules.default        # or neru.nixosModules.default, neru.homeManagerModules.default
-  {
-    services.neru.enable = true;
-    services.neru.settings = {
-      hotkeys = {
-        "Primary+Shift+Space" = "hints --action left_click";
-        "Primary+Shift+G" = "grid --action left_click";
-      };
-    };
-  }
-];
-```
-
-### Module options
-
-Shared by all three modules. Set only one of `settings`, `config` and
-`configFile`, or the build fails.
-
-| Option                          | Default                     | Description                                              |
-| :------------------------------ | :-------------------------- | :------------------------------------------------------- |
-| `services.neru.enable`          | `false`                     | Install Neru and its login service                       |
-| `services.neru.package`         | `pkgs.neru`                 | Package to use. `pkgs.neru-source` builds from source    |
-| `services.neru.settings`        | `{}`                        | Config as a Nix attribute set, written out as TOML       |
-| `services.neru.config`          | `configs/default-config.toml` | Config as an inline TOML string                        |
-| `services.neru.configFile`      | `null`                      | Path to an existing `config.toml`                        |
-| `services.neru.extraEnvironment`| `{}`                        | Extra environment for the service. Merged over a default `PATH` with the Nix binary directories. Setting `PATH` replaces it |
-
-Service options per module:
-
-| Module       | Options                                                                               | Service |
-| :----------- | :------------------------------------------------------------------------------------ | :------ |
-| nix-darwin   | `launchd.enable` (`true`), `launchd.keepAlive` (`true`)                               | launchd user agent, `RunAtLoad` |
-| NixOS        | `systemd.restart` (`"on-failure"`), `systemd.restartSec` (`5`)                        | systemd user service on `graphical-session.target` |
-| home-manager | `launchd.enable`, `launchd.keepAlive` on macOS. `systemd.enable` (`true`), `systemd.restart`, `systemd.restartSec` on Linux | Same as above, and writes `~/.config/neru/config.toml` |
-
-> [!WARNING]
-> With no config set, the modules use `configs/default-config.toml` as is,
-> which binds `Primary+Shift+...` hotkeys even on Linux, where `Primary` is
-> `Ctrl` and `Ctrl+Shift+C` shadows your terminal's copy. On Linux, set your
-> own `[hotkeys]`, or an empty table to leave binding to your compositor. See
-> [Bind your first hotkey](getting-started.md#bind-your-first-hotkey).
-
-### Nix notes
-
-- **Package only:** to manage the service yourself, skip the module and add
-  `pkgs.neru` to `environment.systemPackages` (nix-darwin or NixOS, with the
-  overlay), or `neru.packages.${system}.default` to `home.packages`
-  (home-manager, no overlay). Use `.source` to build from source.
-- **Completions:** the packages install bash, zsh and fish completions on
-  macOS only. On Linux, add them with [Shell completions](#shell-completions).
-- **Updating:** run `nix flake update neru`, then rebuild.
-- **Older Go in nixpkgs:** `pkgs.neru-source` needs Go 1.27, which nixpkgs
-  26.05 and unstable provide. Neru's code uses Go 1.27 language features, so an
-  older Go cannot build it. On an older nixpkgs, use the prebuilt `pkgs.neru`.
-- **Codesigning `pkgs.neru-source` on macOS:** `pkgs.neru` is pre-signed.
-  `pkgs.neru-source` has only the Go linker's signature, without the hardened
-  runtime entitlements. Sign it after activation with the bundled
-  `Contents/Resources/Neru.entitlements`. For nix-darwin:
-
-  ```nix
-  {
-    system.activationScripts.postActivation.text = ''
-      app="/Applications/Nix Apps/Neru.app"
-      if [ -e "$app" ]; then
-        /usr/bin/codesign --force --sign - \
-          --entitlements "$app/Contents/Resources/Neru.entitlements" \
-          --options runtime --timestamp=none "$app"
-      fi
-    '';
-  }
-  ```
-
-  For home-manager, run the same command from
-  `home.activation.signNeru = lib.hm.dag.entryAfter [ "copyApps" ] '' ... ''`
-  with `app="$HOME/Applications/Home Manager Apps/Neru.app"`.
 
 ## From source
 
@@ -229,26 +13,26 @@ Service options per module:
 | Linux    | A C compiler and the `-dev`/`-devel` packages the CGO build links against, listed in [Development setup](../contributing/development.md#development-setup) |
 | Windows  | Git for Windows, whose `sh` runs the `just` recipes. The build has CGO off, so no C compiler        |
 
-`just install` builds Neru into `build/dist/` and runs the install script on
-that tree, so a source install lands in the same places as a release.
-
 ```bash
-git clone https://github.com/y3owk1n/neru.git && cd neru
-just install      # asks before the login service and other optional steps
-just install -y   # accept every prompt
+just build        # bin/neru
+just dist         # build/dist: bin/neru, man pages and, on macOS, Neru.app
 ```
 
-On Windows `just install` runs `scripts/install.ps1`, so use the PowerShell
-flag spelling (`-Yes`, `-NoService`). A source build reports a git describe
-version, so the script treats it as a `source` install. It asks before a
-release replaces a source install, and before a source install replaces a
-release. Other build options are in the
+On macOS, copy `build/dist/Neru.app` to `/Applications` so the CLI and the
+daemon share the app's Accessibility and Screen Recording permissions, and
+link its program onto your `PATH`:
+
+```bash
+cp -R build/dist/Neru.app /Applications/
+ln -sf /Applications/Neru.app/Contents/MacOS/neru /usr/local/bin/neru
+```
+
+Other build options are in the
 [Development guide](../contributing/development.md).
 
 ## Shell completions
 
-The install script, `just install` and the Nix packages on macOS write
-completions for you. Otherwise run `neru completion`:
+Write completions with `neru completion`:
 
 ```bash
 neru completion bash > ~/.local/share/bash-completion/completions/neru
@@ -262,7 +46,7 @@ neru completion powershell | Out-String | Invoke-Expression   # add to your $PRO
 
 ## Login service
 
-The install script offers this. To add it later:
+To start Neru at login:
 
 ```bash
 neru services install
@@ -271,93 +55,7 @@ neru services install
 What it registers on each platform, and when it refuses, is under
 [`neru services`](../reference/cli.md#neru-services).
 
-## Set up with an agent
-
-Three skills for coding agents such as Claude Code, Codex and Cursor.
-`neru-ask` answers what Neru can do and which command or option does it.
-`neru-setup-config` writes, validates and applies your config.
-`neru-build-integration` helps you build a script or program on Neru's CLI,
-IPC socket or Go client. All three read the installed version's help, man
-pages and docs, so no checkout is needed.
-
-```bash
-npx skills add y3owk1n/neru --skill neru-ask --skill neru-setup-config --skill neru-build-integration
-```
-
-Add `-g` to install them for every project.
-
-## Install script reference
-
-### Flags
-
-| bash                        | PowerShell        | Env            | Effect                                                              |
-| :-------------------------- | :---------------- | :------------- | :------------------------------------------------------------------ |
-| `--channel stable\|nightly` | `-Channel`        | `NERU_CHANNEL` | Release channel. Default: the installed one, else stable            |
-| `--version vX.Y.Z`          | `-Version`        | `NERU_VERSION` | Pin a stable release (implies stable)                               |
-| `--from DIR`                | `-From`           | `NERU_FROM`    | Install a local `just dist` tree instead of downloading. `just install` uses this |
-| `--bin-dir DIR`             |                   | `NERU_BIN_DIR` | Where `neru` goes. Default `/usr/local/bin` (macOS), `~/.local/bin` (Linux) |
-| `--app-dir DIR`             |                   | `NERU_APP_DIR` | macOS: where `Neru.app` goes. Default `/Applications`               |
-| `--no-service`              | `-NoService`      |                | Never register or start the login service                           |
-| `--no-completions`          | `-NoCompletions`  |                | Skip shell completions                                              |
-| `--no-man`                  |                   |                | Skip man pages                                                      |
-| `--force`                   | `-Force`          |                | Reinstall the same version                                          |
-| `--uninstall`               | `-Uninstall`      |                | Remove everything a previous run installed. Config is kept          |
-| `--purge`                   | `-Purge`          |                | With uninstall, also delete config, data and logs (each confirmed)  |
-| `-y`, `--yes`               | `-Yes`            | `NERU_YES=1`   | Accept every prompt. Required when no terminal is attached          |
-
-### What it installs
-
-| Platform | Binary and app | Man pages | Completions | Login service |
-| :------- | :------------- | :-------- | :---------- | :------------ |
-| macOS    | `Neru.app` in `/Applications`, `neru` symlinked into `/usr/local/bin` | `/usr/local/share/man/man1` | bash, zsh and fish, whichever you have | launchd agent |
-| Linux    | `~/.local/bin/neru` | `~/.local/share/man/man1` | per-user bash, zsh and fish paths | systemd user service |
-| Windows  | `%LOCALAPPDATA%\Programs\neru\neru.exe`, added to your user PATH, plus a Start Menu shortcut | none | PowerShell profile | Task Scheduler logon task |
-
-- **macOS:** it asks for sudo only when a target directory is not writable.
-- **Linux:** it runs the downloaded binary once first. If a library is
-  missing, it lists the names, points at [Linux setup](linux.md), and stops
-  without changing anything. It offers the `input` group that Wayland
-  keyboard capture needs.
-- **Windows:** it offers to set the `RemoteSigned` execution policy for your
-  user, since PowerShell loads no profile under `Restricted`. Decline and it
-  skips completion.
-- **zsh:** it writes `~/.zsh/completions/_neru` and prints the `fpath` line
-  for `~/.zshrc` if that directory is not on your `fpath`.
-- **Any:** it stops a registered login service while it replaces the binary.
-  It refuses to run over a Homebrew or Nix install and prints the command to
-  use instead.
-
 ## Uninstallation
-
-### Install script
-
-The script removes what it installed: the login service, the app or binary,
-the PATH link, man pages, completions, and on Windows the Start Menu shortcut
-and PATH entry. Config, data and logs stay unless you add `--purge`, which
-asks before deleting each directory.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.sh | bash -s -- --uninstall   # add --purge to delete config, data and logs
-just uninstall    # from a checkout, takes the same -y and --purge
-```
-
-```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.ps1))) -Uninstall
-```
-
-On macOS, the Accessibility and Screen Recording entries stay in System
-Settings, under Privacy & Security. Remove them by hand if you are not
-reinstalling. On Linux, the script leaves your `input` group membership,
-since other evdev tools may need it.
-
-### Homebrew, Nix and oku
-
-Homebrew: `brew uninstall --cask y3owk1n/tap/neru`, or `neru-nightly`. Nix:
-remove the module or package from your configuration and rebuild. oku:
-`oku remove -g neru`, which also stops the service and deletes `Neru.app`
-from `~/Applications`.
-
-### Manual
 
 macOS:
 
